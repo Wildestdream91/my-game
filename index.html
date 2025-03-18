@@ -179,7 +179,7 @@
 </head>
 <body class="dark-mode">
 
-  <h1>Songyfix</h1>
+  <h1>Devinez la chanson et ses paroles !</h1>
 
   <div class="game-rules">
     <h2>Règles du jeu</h2>
@@ -272,7 +272,8 @@ Il y a tout ce que vous voulez`
       }
     ];
     
-    // Pour que tous les utilisateurs aient la même chanson par jour, on la détermine de façon déterministe.
+    // Pour que tous les utilisateurs aient la même chanson par jour,
+    // on la détermine de manière déterministe.
     function getTodayDate() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -291,7 +292,6 @@ Il y a tout ce que vous voulez`
     let titleFound = false;
     let wordAttempts = [];
     
-    // Sauvegarde de l'état du jeu dans le localStorage
     function saveGameState() {
       const state = {
         wordAttempts: wordAttempts,
@@ -304,7 +304,6 @@ Il y a tout ce que vous voulez`
       localStorage.setItem("dailyGameDate", getTodayDate());
     }
     
-    // Chargement de l'état du jeu depuis le localStorage
     function loadGameState() {
       const stateStr = localStorage.getItem("dailyGameState");
       if (stateStr && localStorage.getItem("dailyGameDate") === getTodayDate()) {
@@ -367,6 +366,8 @@ Il y a tout ce que vous voulez`
         titleFound = true;
         document.getElementById("songTitle").textContent = `"${currentSong.title}" - ${currentSong.artist}`;
         messageElement.textContent = "🎉 Bravo, vous avez trouvé le titre !";
+        // Changement de fond après découverte : fond vert foncé
+        document.body.style.background = "linear-gradient(135deg, #013220, #024731)";
         updateLyricsDisplay();
         document.getElementById("wordInput").disabled = true;
         saveGameState();
@@ -406,7 +407,7 @@ Il y a tout ce que vous voulez`
       document.getElementById("wordAttempts").innerHTML = wordListHtml;
     }
     
-    // Fonction de normalisation pour ignorer les apostrophes et espaces multiples
+    // Fonction de normalisation pour ignorer apostrophes et espaces multiples
     function normalizeText(text) {
       return text.toLowerCase().replace(/['’]/g, "").replace(/\s+/g, " ").trim();
     }
