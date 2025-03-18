@@ -92,7 +92,7 @@
       font-size: 16px;
       margin-bottom: 6px;
     }
-    /* Ajout du timer dans les règles */
+    /* Timer placé dans les règles */
     #timer {
       font-size: 18px;
       font-weight: 600;
@@ -273,12 +273,7 @@
   </div>
 
   <script>
-    // Fonction de normalisation pour ignorer les apostrophes et espaces multiples
-    function normalizeText(text) {
-      return text.toLowerCase().replace(/['’]/g, "").replace(/\s+/g, " ").trim();
-    }
-    
-    // Tableau de chansons par défaut
+    // Tableau de chansons par défaut (plusieurs chansons d'artistes connus)
     const songsList = [
       {
         title: "La Vie en Rose",
@@ -407,7 +402,7 @@ Il y a tout ce que vous voulez`
     }
     
     function disableNewSongButton() {
-      // Pas de bouton "Nouvelle chanson" dans cette version.
+      // Aucun bouton "Nouvelle chanson" dans cette version
     }
     
     function updateLyricsDisplay() {
@@ -496,7 +491,7 @@ Il y a tout ce que vous voulez`
         Taux de réussite : ${successRate}%`;
     }
     
-    // Fonction de normalisation pour ignorer les apostrophes et espaces multiples
+    // Fonction de normalisation pour ignorer apostrophes et espaces multiples
     function normalizeText(text) {
       return text.toLowerCase().replace(/['’]/g, "").replace(/\s+/g, " ").trim();
     }
