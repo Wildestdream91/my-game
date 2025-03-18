@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Devinez la Chanson - Chanson du Jour</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Variables mode clair */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #e0eafc, #cfdef3);
+      --text-color: #333;
+      --container-bg: #ffffff;
+      --container-shadow: rgba(0,0,0,0.1);
+      --button-bg: #007bff;
+      --button-hover: #0056b3;
+      --input-border: #ccc;
+      --lyrics-bg: #fafafa;
+      --popup-bg: #ffffff;
+    }
+    /* Mode sombre */
+    body.dark-mode {
+      --bg-gradient: linear-gradient(135deg, #2c3e50, #4ca1af);
+      --text-color: #e0e0e0;
+      --container-bg: #1e1e1e;
+      --container-shadow: rgba(0,0,0,0.5);
+      --button-bg: #1e88e5;
+      --button-hover: #1565c0;
+      --input-border: #555;
+      --lyrics-bg: #2c2c2c;
+      --popup-bg: #2c2c2c;
+    }
+    /* Global styles et centrage */
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 36px;
+      margin-bottom: 20px;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .toggle-container {
+      width: 100%;
+      text-align: right;
+      margin-bottom: 10px;
+    }
+    .toggle-container button {
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: var(--button-bg);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle-container button:hover {
+      background-color: var(--button-hover);
+    }
+    .game-rules {
+      max-width: 800px;
+      margin: 0 auto 20px;
+      background: var(--container-bg);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px var(--container-shadow);
+      text-align: left;
+    }
+    .game-rules h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .game-rules ul {
+      padding-left: 20px;
+      margin: 0;
+    }
+    .game-rules li {
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--container-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--container-shadow);
+      transition: background 0.3s;
+      margin-bottom: 20px;
+    }
+    .song-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+      opacity: 1;
+      transform: scale(1);
+    }
+    .lyrics-container {
+      background: var(--lyrics-bg);
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 18px;
+      line-height: 1.6;
+      white-space: pre-line;
+      text-align: left;
+      min-height: 200px;
+      margin-bottom: 20px;
+      transition: background 0.3s, opacity 0.5s;
+    }
+    input {
+      padding: 12px;
+      font-size: 16px;
+      width: 80%;
+      border: 1px solid var(--input-border);
+      border-radius: 5px;
+      margin-bottom: 10px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--button-bg);
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: var(--button-bg);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+      transition: background 0.3s, transform 0.3s;
+    }
+    button:hover {
+      background-color: var(--button-hover);
+      transform: scale(1.05);
+    }
+    .message {
+      margin-top: 15px;
+      font-size: 18px;
+      color: green;
+    }
+    .score {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #ff5733;
+    }
+    .word-list {
+      text-align: left;
+      margin-top: 20px;
+    }
+    .word-list ul {
+      list-style: none;
+      padding: 0;
+    }
+    .word-list li {
+      font-size: 16px;
+      padding: 6px;
+      margin-bottom: 4px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInSlide 0.4s ease-in-out forwards;
+    }
+    .correct {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .incorrect {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .dashboard {
+      margin-top: 30px;
+      text-align: left;
+      font-size: 16px;
+      background: rgba(0,0,0,0.05);
+      padding: 15px;
+      border-radius: 8px;
+      transition: background 0.3s;
+    }
+    .dashboard h3 {
+      margin-bottom: 10px;
+      font-family: 'Montserrat', sans-serif;
+    }
+    /* Popup */
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .popup {
+      background: var(--popup-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      text-align: center;
+      animation: popupAnim 0.5s ease-out;
+      max-width: 90%;
+      transition: background 0.3s;
+    }
+    .popup h2 {
+      margin-top: 0;
+      color: #28a745;
+      font-size: 32px;
+    }
+    .popup p {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    .popup button {
+      background-color: #28a745;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin: 5px;
+    }
+    .popup button:hover {
+      background-color: #218838;
+      transform: scale(1.05);
+    }
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popupAnim {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toggle-container">
+    <button id="darkModeToggle" onclick="toggleDarkMode()">Mode Sombre</button>
+  </div>
+
+  <h1>Devinez la chanson et ses paroles !</h1>
+
+  <div class="game-rules">
+    <h2>Règles du jeu</h2>
+    <ul>
+      <li>Une chanson est sélectionnée aléatoirement parmi plusieurs chansons d'artistes connus.</li>
+      <li>Tous les mots des paroles sont masqués.</li>
+      <li>Entrez un mot pour révéler des parties des paroles, ou tapez directement le titre.</li>
+      <li>Si vous trouvez le titre, un pop-up s'affiche avec vos statistiques et des options de partage.</li>
+      <li>La chanson du jour est unique et se met à jour automatiquement à minuit.</li>
+      <li>Tous les utilisateurs auront la même chanson pour la journée.</li>
+    </ul>
+  </div>
+
+  <div class="container">
+    <div class="song-title" id="songTitle">?????</div>
+    
+    <div class="lyrics-container">
+      <p id="maskedLyrics"></p>
+    </div>
+
+    <input type="text" id="wordInput" placeholder="Entrez un mot ou le titre">
+    <div>
+      <button onclick="checkWord()">Vérifier</button>
+      <button id="newSongBtn" onclick="resetGame()">Nouvelle chanson</button>
+    </div>
+
+    <p class="message" id="message"></p>
+    <p class="score" id="score"></p>
+
+    <div class="word-list">
+      <h3>Mots essayés :</h3>
+      <ul id="wordAttempts"></ul>
+    </div>
+
+    <div class="dashboard">
+      <h3>Statistiques personnelles</h3>
+      <p id="stats"></p>
+    </div>
+  </div>
+
+  <!-- Popup de félicitations -->
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup">
+      <h2>Félicitations !</h2>
+      <p id="popupTitle"></p>
+      <p id="popupMessage"></p>
+      <button onclick="shareScore()">Partager</button>
+      <button onclick="nextSong()">Passer à la chanson suivante</button>
+    </div>
+  </div>
+
+  <script>
+    // Tableau de chansons par défaut (plusieurs chansons d'artistes connus)
+    const songsList = [
+      {
+        title: "La Vie en Rose",
+        artist: "Edith Piaf",
+        lyrics: `Quand il me prend dans ses bras
+Il me parle tout bas
+Je vois la vie en rose
+
+Il me dit des mots d'amour
+Des mots de tous les jours
+Et ça me fait quelque chose
+
+Il est entré dans mon cœur
+Une part de bonheur
+Dont je connais la cause`
+      },
+      {
+        title: "Ne me quitte pas",
+        artist: "Jacques Brel",
+        lyrics: `Ne me quitte pas
+Il faut oublier
+Tout peut s'oublier
+Qui s'enfuit déjà
+
+Oublier le temps
+Des malentendus
+Et le temps perdu
+À savoir comment`
+      },
+      {
+        title: "Je l'aime à mourir",
+        artist: "Francis Cabrel",
+        lyrics: `Moi, je n'étais rien
+Et voilà qu'aujourd'hui
+Je suis le gardien
+Du sommeil de ses nuits
+
+Je l'aime à mourir
+Tu peux détruire
+Tout ce que tu veux
+Elle n'a qu'à ouvrir
+L'espace de ses bras
+Pour tout reconstruire`
+      },
+      {
+        title: "Les Champs-Élysées",
+        artist: "Joe Dassin",
+        lyrics: `Aux Champs-Élysées,
+Aux Champs-Élysées,
+Au soleil, sous la pluie,
+À midi ou à minuit,
+Il y a tout ce que vous voulez`
+      }
+    ];
+    
+    // Pour que tous les utilisateurs aient la même chanson par jour,
+    // on détermine la chanson du jour de façon déterministe selon la date.
+    function getTodayDate() {
+      return new Date().toISOString().slice(0, 10);
+    }
+    function getDailySong() {
+      const today = getTodayDate();
+      const numericDate = parseInt(today.replace(/-/g, ""));
+      const index = numericDate % songsList.length;
+      return songsList[index];
+    }
+    
+    // Variables de jeu
+    let currentSong;
+    let correctAttempts;
+    let incorrectAttempts;
+    let revealedWords;
+    let titleFound = false;
+    let wordAttempts = [];
+    
+    // Statistiques personnelles
+    let gamesPlayed = 0;
+    let totalAttempts = 0;
+    let totalCorrect = 0;
+    let totalIncorrect = 0;
+    
+    function selectDailySong() {
+      currentSong = getDailySong();
+      disableNewSongButton();
+      correctAttempts = 0;
+      incorrectAttempts = 0;
+      revealedWords = [];
+      wordAttempts = [];
+      titleFound = false;
+      document.getElementById("songTitle").textContent = "?????";
+      document.getElementById("wordAttempts").innerHTML = "";
+      updateLyricsDisplay();
+      updateScore();
+    }
+    
+    function disableNewSongButton() {
+      const btn = document.getElementById("newSongBtn");
+      if (btn) {
+        btn.disabled = true;
+        btn.title = "La chanson du jour est fixée. Revenez demain pour une nouvelle chanson.";
+      }
+    }
+    
+    function updateLyricsDisplay() {
+      const lyricsArray = currentSong.lyrics.split("\n").map(line =>
+        line.split(" ").map(word =>
+          revealedWords.includes(word.toLowerCase()) ? word : "_".repeat(word.length)
+        ).join(" ")
+      );
+      document.getElementById("maskedLyrics").innerHTML = lyricsArray.join("<br>");
+    }
+    
+    function checkWord() {
+      const inputField = document.getElementById("wordInput");
+      const inputWord = inputField.value.trim().toLowerCase();
+      const messageElement = document.getElementById("message");
+    
+      if (inputWord === "" || wordAttempts.some(entry => entry.word === inputWord)) {
+        messageElement.textContent = "⚠️ Mot déjà essayé ou vide.";
+        inputField.value = "";
+        inputField.focus();
+        return;
+      }
+    
+      // Vérifier si l'utilisateur a entré le titre
+      if (inputWord === currentSong.title.toLowerCase() && !titleFound) {
+        titleFound = true;
+        document.getElementById("songTitle").textContent = `"${currentSong.title}" - ${currentSong.artist}`;
+        messageElement.textContent = "🎉 Bravo, vous avez trouvé le titre !";
+        gamesPlayed++;
+        totalAttempts += wordAttempts.length;
+        totalCorrect += correctAttempts;
+        totalIncorrect += incorrectAttempts;
+        updateDashboard();
+        showCongratsPopup();
+        inputField.value = "";
+        inputField.focus();
+        return;
+      }
+    
+      const isCorrect = currentSong.lyrics.toLowerCase().split(/\s+/).includes(inputWord);
+      wordAttempts.push({ word: inputWord, correct: isCorrect, attempt: wordAttempts.length + 1 });
+    
+      if (isCorrect) {
+        revealedWords.push(inputWord);
+        correctAttempts++;
+        messageElement.textContent = "✅ Bien joué !";
+      } else {
+        incorrectAttempts++;
+        messageElement.textContent = "❌ Ce mot n'est pas dans la chanson.";
+      }
+    
+      updateLyricsDisplay();
+      updateScore();
+      updateWordList();
+      inputField.value = "";
+      inputField.focus();
+    }
+    
+    function updateScore() {
+      document.getElementById("score").textContent = `✅ Réussis : ${correctAttempts} | ❌ Ratés : ${incorrectAttempts}`;
+    }
+    
+    function updateWordList() {
+      const reversed = [...wordAttempts].reverse();
+      const wordListHtml = reversed.map(entry =>
+        `<li class="${entry.correct ? 'correct' : 'incorrect'}">${entry.attempt}. ${entry.word}</li>`
+      ).join("");
+      document.getElementById("wordAttempts").innerHTML = wordListHtml;
+    }
+    
+    function updateDashboard() {
+      totalAttempts += wordAttempts.length;
+      const successRate = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+      document.getElementById("stats").innerHTML = `Chansons jouées : ${gamesPlayed}<br>
+        Total de mots essayés : ${totalAttempts}<br>
+        Réussites : ${totalCorrect}<br>
+        Ratés : ${totalIncorrect}<br>
+        Taux de réussite : ${successRate}%`;
+    }
+    
+    function showCongratsPopup() {
+      const popupOverlay = document.getElementById("popupOverlay");
+      const popupTitle = document.getElementById("popupTitle");
+      const popupMessage = document.getElementById("popupMessage");
+      popupTitle.innerHTML = `<span style="font-size:28px; font-weight:bold;">"${currentSong.title}" - ${currentSong.artist}</span>`;
+      popupMessage.textContent = `Vous avez essayé ${wordAttempts.length} mot(s).`;
+      popupOverlay.style.display = "flex";
+      // Marquer la journée comme jouée
+      localStorage.setItem("dailyGameCompleted", "true");
+    }
+    
+    function nextSong() {
+      // Pour une chanson par jour, on ne permet pas de changer avant le lendemain.
+      alert("La chanson du jour est fixée. Revenez demain pour une nouvelle chanson !");
+    }
+    
+    function shareScore() {
+      const shareData = {
+        title: `J'ai trouvé "${currentSong.title}" !`,
+        text: `J'ai deviné "${currentSong.title}" par ${currentSong.artist} en ${wordAttempts.length} mot(s) essayés !`,
+        url: window.location.href
+      };
+      if (navigator.share) {
+        navigator.share(shareData)
+          .then(() => console.log("Partagé avec succès"))
+          .catch((err) => console.error("Erreur de partage", err));
+      } else {
+        navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
+        alert("Texte copié dans le presse-papier !");
+      }
+    }
+    
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+    }
+    
+    // Vérifie si le jeu du jour a déjà été complété (pour empêcher de rejouer si la page est rafraîchie)
+    function checkDailyGameCompleted() {
+      return localStorage.getItem("dailyGameCompleted") === "true" && localStorage.getItem("dailySongDate") === getTodayDate();
+    }
+    
+    function saveDailyGameStatus() {
+      localStorage.setItem("dailySongDate", getTodayDate());
+    }
+    
+    function disableGame() {
+      document.getElementById("wordInput").disabled = true;
+      document.getElementById("newSongBtn").disabled = true;
+      document.getElementById("message").textContent = "Vous avez déjà joué aujourd'hui. Revenez demain pour une nouvelle chanson !";
+    }
+    
+    // Planifie la mise à jour à minuit
+    function scheduleMidnightUpdate() {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      const msToMidnight = midnight - now;
+      setTimeout(() => {
+        localStorage.removeItem("dailyGameCompleted");
+        localStorage.removeItem("dailySongDate");
+        location.reload();
+      }, msToMidnight);
+    }
+    
+    // Initialisation
+    window.onload = function() {
+      // Si le jeu du jour a déjà été joué, on désactive le jeu
+      if (checkDailyGameCompleted()) {
+        currentSong = getDailySong();
+        disableGame();
+        updateLyricsDisplay();
+        updateScore();
+        updateWordList();
+      } else {
+        selectDailySong();
+      }
+      saveDailyGameStatus();
+      scheduleMidnightUpdate();
+    };
+    
+    document.getElementById("wordInput").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        checkWord();
+      }
+    });
+  </script>
+
+</body>
+</html>
