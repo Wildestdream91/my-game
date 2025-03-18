@@ -199,52 +199,7 @@
       margin-bottom: 10px;
       font-family: 'Montserrat', sans-serif;
     }
-    /* Popup */
-    .popup-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .popup {
-      background: var(--popup-bg);
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      text-align: center;
-      animation: popupAnim 0.5s ease-out;
-      max-width: 90%;
-      transition: background 0.3s;
-    }
-    .popup h2 {
-      margin-top: 0;
-      color: #28a745;
-      font-size: 32px;
-    }
-    .popup p {
-      font-size: 20px;
-      margin: 10px 0;
-    }
-    .popup button {
-      background-color: #28a745;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: 0.3s;
-      margin: 5px;
-    }
-    .popup button:hover {
-      background-color: #218838;
-      transform: scale(1.05);
-    }
+    /* Supprimé le popup */
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -257,10 +212,6 @@
     @keyframes fadeInSlide {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes popupAnim {
-      from { transform: scale(0.5); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
@@ -278,16 +229,15 @@
       <li>Une chanson est sélectionnée aléatoirement parmi plusieurs chansons d'artistes connus.</li>
       <li>Tous les mots des paroles sont masqués.</li>
       <li>Entrez un mot pour révéler des parties des paroles, ou tapez directement le titre.</li>
-      <li>Si vous trouvez le titre, un pop-up s'affiche avec vos statistiques et des options de partage.</li>
-      <li>La chanson du jour est unique et se met à jour automatiquement à minuit.</li>
-      <li>Tous les utilisateurs auront la même chanson pour la journée.</li>
+      <li>Si vous trouvez le titre, les paroles et le nom de la chanson s'affichent définitivement sur la page.</li>
+      <li>La chanson du jour est unique et se met à jour automatiquement à minuit. Tous les utilisateurs auront la même chanson pour la journée.</li>
     </ul>
   </div>
 
   <div class="container">
     <div class="song-title" id="songTitle">?????</div>
     
-    <div class="lyrics-container">
+    <div class="lyrics-container" id="lyricsContainer">
       <p id="maskedLyrics"></p>
     </div>
 
@@ -311,19 +261,8 @@
     </div>
   </div>
 
-  <!-- Popup de félicitations -->
-  <div class="popup-overlay" id="popupOverlay">
-    <div class="popup">
-      <h2>Félicitations !</h2>
-      <p id="popupTitle"></p>
-      <p id="popupMessage"></p>
-      <button onclick="shareScore()">Partager</button>
-      <button onclick="nextSong()">Passer à la chanson suivante</button>
-    </div>
-  </div>
-
   <script>
-    // Tableau de chansons par défaut (plusieurs chansons d'artistes connus)
+    // Tableau de chansons par défaut
     const songsList = [
       {
         title: "La Vie en Rose",
@@ -379,8 +318,7 @@ Il y a tout ce que vous voulez`
       }
     ];
     
-    // Pour que tous les utilisateurs aient la même chanson par jour,
-    // on détermine la chanson du jour de façon déterministe selon la date.
+    // Pour que tous les utilisateurs aient la même chanson par jour, on détermine la chanson du jour de façon déterministe
     function getTodayDate() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -428,12 +366,17 @@ Il y a tout ce que vous voulez`
     }
     
     function updateLyricsDisplay() {
-      const lyricsArray = currentSong.lyrics.split("\n").map(line =>
-        line.split(" ").map(word =>
-          revealedWords.includes(word.toLowerCase()) ? word : "_".repeat(word.length)
-        ).join(" ")
-      );
-      document.getElementById("maskedLyrics").innerHTML = lyricsArray.join("<br>");
+      // Si le titre est trouvé, afficher toutes les paroles, sinon les masquer
+      if (titleFound) {
+        document.getElementById("maskedLyrics").innerHTML = currentSong.lyrics.replace(/\n/g, "<br>");
+      } else {
+        const lyricsArray = currentSong.lyrics.split("\n").map(line =>
+          line.split(" ").map(word =>
+            revealedWords.includes(word.toLowerCase()) ? word : "_".repeat(word.length)
+          ).join(" ")
+        );
+        document.getElementById("maskedLyrics").innerHTML = lyricsArray.join("<br>");
+      }
     }
     
     function checkWord() {
@@ -458,9 +401,10 @@ Il y a tout ce que vous voulez`
         totalCorrect += correctAttempts;
         totalIncorrect += incorrectAttempts;
         updateDashboard();
-        showCongratsPopup();
-        inputField.value = "";
-        inputField.focus();
+        // Révéler toutes les paroles
+        updateLyricsDisplay();
+        // Désactiver l'input pour empêcher d'autres essais
+        inputField.disabled = true;
         return;
       }
     
@@ -505,20 +449,74 @@ Il y a tout ce que vous voulez`
         Taux de réussite : ${successRate}%`;
     }
     
-    function showCongratsPopup() {
-      const popupOverlay = document.getElementById("popupOverlay");
-      const popupTitle = document.getElementById("popupTitle");
-      const popupMessage = document.getElementById("popupMessage");
-      popupTitle.innerHTML = `<span style="font-size:28px; font-weight:bold;">"${currentSong.title}" - ${currentSong.artist}</span>`;
-      popupMessage.textContent = `Vous avez essayé ${wordAttempts.length} mot(s).`;
-      popupOverlay.style.display = "flex";
-      // Marquer la journée comme jouée
-      localStorage.setItem("dailyGameCompleted", "true");
+    // Pour que la chanson reste la même pour tout le monde,
+    // on détermine la chanson du jour de manière déterministe.
+    // Le bouton "Nouvelle chanson" est désactivé.
+    function resetGame() {
+      // Si le jeu est déjà terminé (titre trouvé), on ne permet pas de réessayer
+      if (titleFound) {
+        alert("Vous avez déjà terminé la chanson du jour. Revenez demain pour une nouvelle chanson !");
+        return;
+      }
+      // Sinon, réinitialise uniquement les tentatives
+      correctAttempts = 0;
+      incorrectAttempts = 0;
+      revealedWords = [];
+      wordAttempts = [];
+      titleFound = false;
+      document.getElementById("songTitle").textContent = "?????";
+      document.getElementById("wordAttempts").innerHTML = "";
+      document.getElementById("message").textContent = "";
+      updateLyricsDisplay();
+      updateScore();
+      document.getElementById("wordInput").disabled = false;
+      document.getElementById("wordInput").value = "";
+      document.getElementById("wordInput").focus();
     }
     
-    function nextSong() {
-      // Pour une chanson par jour, on ne permet pas de changer avant le lendemain.
-      alert("La chanson du jour est fixée. Revenez demain pour une nouvelle chanson !");
+    // Planifie la mise à jour automatique à minuit
+    function scheduleMidnightUpdate() {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      const msToMidnight = midnight - now;
+      setTimeout(() => {
+        localStorage.removeItem("dailyGameCompleted");
+        localStorage.removeItem("dailySongDate");
+        location.reload();
+      }, msToMidnight);
+    }
+    
+    // Initialisation
+    window.onload = function() {
+      // Pour une chanson du jour déterministe, on utilise getDailySong()
+      selectDailySong();
+      scheduleMidnightUpdate();
+    };
+    
+    function selectDailySong() {
+      currentSong = getDailySong();
+      disableNewSongButton();
+      correctAttempts = 0;
+      incorrectAttempts = 0;
+      revealedWords = [];
+      wordAttempts = [];
+      titleFound = false;
+      document.getElementById("songTitle").textContent = "?????";
+      document.getElementById("wordAttempts").innerHTML = "";
+      updateLyricsDisplay();
+      updateScore();
+      document.getElementById("wordInput").disabled = false;
+      document.getElementById("wordInput").value = "";
+      document.getElementById("wordInput").focus();
+    }
+    
+    function disableNewSongButton() {
+      const btn = document.getElementById("newSongBtn");
+      if (btn) {
+        btn.disabled = true;
+        btn.title = "La chanson du jour est fixée. Revenez demain pour une nouvelle chanson.";
+      }
     }
     
     function shareScore() {
@@ -540,50 +538,6 @@ Il y a tout ce que vous voulez`
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
     }
-    
-    // Vérifie si le jeu du jour a déjà été complété (pour empêcher de rejouer si la page est rafraîchie)
-    function checkDailyGameCompleted() {
-      return localStorage.getItem("dailyGameCompleted") === "true" && localStorage.getItem("dailySongDate") === getTodayDate();
-    }
-    
-    function saveDailyGameStatus() {
-      localStorage.setItem("dailySongDate", getTodayDate());
-    }
-    
-    function disableGame() {
-      document.getElementById("wordInput").disabled = true;
-      document.getElementById("newSongBtn").disabled = true;
-      document.getElementById("message").textContent = "Vous avez déjà joué aujourd'hui. Revenez demain pour une nouvelle chanson !";
-    }
-    
-    // Planifie la mise à jour à minuit
-    function scheduleMidnightUpdate() {
-      const now = new Date();
-      const midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      const msToMidnight = midnight - now;
-      setTimeout(() => {
-        localStorage.removeItem("dailyGameCompleted");
-        localStorage.removeItem("dailySongDate");
-        location.reload();
-      }, msToMidnight);
-    }
-    
-    // Initialisation
-    window.onload = function() {
-      // Si le jeu du jour a déjà été joué, on désactive le jeu
-      if (checkDailyGameCompleted()) {
-        currentSong = getDailySong();
-        disableGame();
-        updateLyricsDisplay();
-        updateScore();
-        updateWordList();
-      } else {
-        selectDailySong();
-      }
-      saveDailyGameStatus();
-      scheduleMidnightUpdate();
-    };
     
     document.getElementById("wordInput").addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
