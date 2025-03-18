@@ -92,6 +92,13 @@
       font-size: 16px;
       margin-bottom: 6px;
     }
+    /* Ajout du timer dans les règles */
+    #timer {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-color);
+      margin-top: 10px;
+    }
     .container {
       max-width: 800px;
       width: 100%;
@@ -108,7 +115,6 @@
       font-weight: 700;
       margin-bottom: 20px;
       text-align: center;
-      /* Avant découverte : afficher "?????" */
       opacity: 1;
       transform: scale(1);
     }
@@ -200,13 +206,6 @@
       margin-bottom: 10px;
       font-family: 'Montserrat', sans-serif;
     }
-    /* Timer */
-    #timer {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-color);
-      margin-top: 10px;
-    }
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -244,6 +243,7 @@
       <li>La chanson du jour est unique et se met à jour automatiquement à minuit.</li>
       <li>Tous les utilisateurs auront la même chanson pour la journée.</li>
     </ul>
+    <div id="timer"></div>
   </div>
 
   <div class="container">
@@ -270,12 +270,15 @@
       <h3>Statistiques personnelles</h3>
       <p id="stats"></p>
     </div>
-    
-    <div id="timer"></div>
   </div>
 
   <script>
-    // Tableau de chansons par défaut (plusieurs chansons d'artistes connus)
+    // Fonction de normalisation pour ignorer les apostrophes et espaces multiples
+    function normalizeText(text) {
+      return text.toLowerCase().replace(/['’]/g, "").replace(/\s+/g, " ").trim();
+    }
+    
+    // Tableau de chansons par défaut
     const songsList = [
       {
         title: "La Vie en Rose",
@@ -331,7 +334,8 @@ Il y a tout ce que vous voulez`
       }
     ];
     
-    // Pour que tous les utilisateurs aient la même chanson par jour, on la détermine de façon déterministe
+    // Pour que tous les utilisateurs aient la même chanson par jour,
+    // on détermine la chanson du jour de manière déterministe.
     function getTodayDate() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -356,7 +360,7 @@ Il y a tout ce que vous voulez`
     let totalCorrect = 0;
     let totalIncorrect = 0;
     
-    // Sauvegarde et chargement de l'état du jeu dans le localStorage
+    // Sauvegarde de l'état du jeu dans le localStorage
     function saveGameState() {
       const state = {
         wordAttempts: wordAttempts,
@@ -369,6 +373,7 @@ Il y a tout ce que vous voulez`
       localStorage.setItem("dailyGameDate", getTodayDate());
     }
     
+    // Chargement de l'état du jeu depuis le localStorage
     function loadGameState() {
       const stateStr = localStorage.getItem("dailyGameState");
       if (stateStr && localStorage.getItem("dailyGameDate") === getTodayDate()) {
@@ -411,7 +416,7 @@ Il y a tout ce que vous voulez`
       } else {
         const lyricsArray = currentSong.lyrics.split("\n").map(line =>
           line.split(" ").map(word =>
-            revealedWords.includes(word.toLowerCase()) ? word : "_".repeat(word.length)
+            revealedWords.includes(normalizeText(word)) ? word : "_".repeat(word.length)
           ).join(" ")
         );
         document.getElementById("maskedLyrics").innerHTML = lyricsArray.join("<br>");
@@ -420,18 +425,19 @@ Il y a tout ce que vous voulez`
     
     function checkWord() {
       const inputField = document.getElementById("wordInput");
-      const inputWord = inputField.value.trim().toLowerCase();
+      const inputWord = inputField.value.trim();
+      const normInput = normalizeText(inputWord);
       const messageElement = document.getElementById("message");
     
-      if (inputWord === "" || wordAttempts.some(entry => entry.word === inputWord)) {
+      if (normInput === "" || wordAttempts.some(entry => normalizeText(entry.word) === normInput)) {
         messageElement.textContent = "⚠️ Mot déjà essayé ou vide.";
         inputField.value = "";
         inputField.focus();
         return;
       }
     
-      // Vérifier si le joueur a entré le titre
-      if (inputWord === currentSong.title.toLowerCase() && !titleFound) {
+      // Vérifier si l'utilisateur a entré le titre (en normalisant)
+      if (normInput === normalizeText(currentSong.title) && !titleFound) {
         titleFound = true;
         document.getElementById("songTitle").textContent = `"${currentSong.title}" - ${currentSong.artist}`;
         messageElement.textContent = "🎉 Bravo, vous avez trouvé le titre !";
@@ -446,11 +452,13 @@ Il y a tout ce que vous voulez`
         return;
       }
     
-      const isCorrect = currentSong.lyrics.toLowerCase().split(/\s+/).includes(inputWord);
+      // Vérifier si le mot est dans les paroles (en normalisant)
+      const normalizedLyricsWords = currentSong.lyrics.toLowerCase().split(/\s+/).map(normalizeText);
+      const isCorrect = normalizedLyricsWords.includes(normInput);
       wordAttempts.push({ word: inputWord, correct: isCorrect, attempt: wordAttempts.length + 1 });
     
       if (isCorrect) {
-        revealedWords.push(inputWord);
+        revealedWords.push(normInput);
         correctAttempts++;
         messageElement.textContent = "✅ Bien joué !";
       } else {
@@ -486,6 +494,11 @@ Il y a tout ce que vous voulez`
         Réussites : ${totalCorrect}<br>
         Ratés : ${totalIncorrect}<br>
         Taux de réussite : ${successRate}%`;
+    }
+    
+    // Fonction de normalisation pour ignorer les apostrophes et espaces multiples
+    function normalizeText(text) {
+      return text.toLowerCase().replace(/['’]/g, "").replace(/\s+/g, " ").trim();
     }
     
     // Timer jusqu'à minuit
@@ -528,7 +541,6 @@ Il y a tout ce que vous voulez`
         checkWord();
       }
     });
-    
   </script>
 
 </body>
