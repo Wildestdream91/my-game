@@ -108,6 +108,7 @@
       font-weight: 700;
       margin-bottom: 20px;
       text-align: center;
+      /* Avant découverte : afficher "?????" */
       opacity: 1;
       transform: scale(1);
     }
@@ -274,7 +275,7 @@
   </div>
 
   <script>
-    // Tableau de chansons par défaut
+    // Tableau de chansons par défaut (plusieurs chansons d'artistes connus)
     const songsList = [
       {
         title: "La Vie en Rose",
@@ -330,7 +331,7 @@ Il y a tout ce que vous voulez`
       }
     ];
     
-    // Pour que tous les utilisateurs aient la même chanson par jour, on détermine la chanson du jour de manière déterministe.
+    // Pour que tous les utilisateurs aient la même chanson par jour, on la détermine de façon déterministe
     function getTodayDate() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -355,7 +356,7 @@ Il y a tout ce que vous voulez`
     let totalCorrect = 0;
     let totalIncorrect = 0;
     
-    // Sauvegarde de l'état de jeu dans le localStorage
+    // Sauvegarde et chargement de l'état du jeu dans le localStorage
     function saveGameState() {
       const state = {
         wordAttempts: wordAttempts,
@@ -368,7 +369,6 @@ Il y a tout ce que vous voulez`
       localStorage.setItem("dailyGameDate", getTodayDate());
     }
     
-    // Chargement de l'état de jeu depuis le localStorage
     function loadGameState() {
       const stateStr = localStorage.getItem("dailyGameState");
       if (stateStr && localStorage.getItem("dailyGameDate") === getTodayDate()) {
@@ -384,8 +384,7 @@ Il y a tout ce que vous voulez`
     function selectDailySong() {
       currentSong = getDailySong();
       disableNewSongButton();
-      loadGameState();  // Charge l'état sauvegardé si disponible
-      // Si aucun état n'est sauvegardé, initialiser
+      loadGameState();
       if (!localStorage.getItem("dailyGameState") || localStorage.getItem("dailyGameDate") !== getTodayDate()) {
         correctAttempts = 0;
         incorrectAttempts = 0;
@@ -403,7 +402,7 @@ Il y a tout ce que vous voulez`
     }
     
     function disableNewSongButton() {
-      // Pas de bouton "Nouvelle chanson" dans cette version
+      // Pas de bouton "Nouvelle chanson" dans cette version.
     }
     
     function updateLyricsDisplay() {
@@ -431,7 +430,7 @@ Il y a tout ce que vous voulez`
         return;
       }
     
-      // Vérifier si l'utilisateur a entré le titre
+      // Vérifier si le joueur a entré le titre
       if (inputWord === currentSong.title.toLowerCase() && !titleFound) {
         titleFound = true;
         document.getElementById("songTitle").textContent = `"${currentSong.title}" - ${currentSong.artist}`;
@@ -515,25 +514,13 @@ Il y a tout ce que vous voulez`
       }, msToMidnight);
     }
     
-    function shareScore() {
-      const shareData = {
-        title: `J'ai trouvé "${currentSong.title}" !`,
-        text: `J'ai deviné "${currentSong.title}" par ${currentSong.artist} en ${wordAttempts.length} mot(s) essayés !`,
-        url: window.location.href
-      };
-      if (navigator.share) {
-        navigator.share(shareData)
-          .then(() => console.log("Partagé avec succès"))
-          .catch((err) => console.error("Erreur de partage", err));
-      } else {
-        navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
-        alert("Texte copié dans le presse-papier !");
-      }
-    }
-    
-    function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
-    }
+    // Initialisation
+    window.onload = function() {
+      selectDailySong();
+      scheduleMidnightUpdate();
+      setInterval(updateTimer, 1000);
+      updateTimer();
+    };
     
     document.getElementById("wordInput").addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
@@ -542,26 +529,6 @@ Il y a tout ce que vous voulez`
       }
     });
     
-    // Initialisation
-    window.onload = function() {
-      // Si un état de jeu existe pour aujourd'hui, le charger
-      if (localStorage.getItem("dailyGameDate") === getTodayDate() && localStorage.getItem("dailyGameState")) {
-        loadGameState();
-        currentSong = getDailySong();
-        updateLyricsDisplay();
-        updateScore();
-        updateWordList();
-        updateDashboard();
-        if (titleFound) {
-          document.getElementById("wordInput").disabled = true;
-        }
-      } else {
-        selectDailySong();
-      }
-      scheduleMidnightUpdate();
-      setInterval(updateTimer, 1000);
-      updateTimer();
-    };
   </script>
 
 </body>
