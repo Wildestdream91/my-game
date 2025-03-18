@@ -199,7 +199,13 @@
       margin-bottom: 10px;
       font-family: 'Montserrat', sans-serif;
     }
-    /* Supprimé le popup */
+    /* Timer */
+    #timer {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-color);
+      margin-top: 10px;
+    }
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -212,6 +218,10 @@
     @keyframes fadeInSlide {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popupAnim {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
@@ -229,8 +239,9 @@
       <li>Une chanson est sélectionnée aléatoirement parmi plusieurs chansons d'artistes connus.</li>
       <li>Tous les mots des paroles sont masqués.</li>
       <li>Entrez un mot pour révéler des parties des paroles, ou tapez directement le titre.</li>
-      <li>Si vous trouvez le titre, les paroles et le nom de la chanson s'affichent définitivement sur la page.</li>
-      <li>La chanson du jour est unique et se met à jour automatiquement à minuit. Tous les utilisateurs auront la même chanson pour la journée.</li>
+      <li>Si vous trouvez le titre, celui-ci et toutes les paroles seront affichés définitivement sur la page.</li>
+      <li>La chanson du jour est unique et se met à jour automatiquement à minuit.</li>
+      <li>Tous les utilisateurs auront la même chanson pour la journée.</li>
     </ul>
   </div>
 
@@ -244,7 +255,6 @@
     <input type="text" id="wordInput" placeholder="Entrez un mot ou le titre">
     <div>
       <button onclick="checkWord()">Vérifier</button>
-      <button id="newSongBtn" onclick="resetGame()">Nouvelle chanson</button>
     </div>
 
     <p class="message" id="message"></p>
@@ -259,6 +269,8 @@
       <h3>Statistiques personnelles</h3>
       <p id="stats"></p>
     </div>
+    
+    <div id="timer"></div>
   </div>
 
   <script>
@@ -318,7 +330,7 @@ Il y a tout ce que vous voulez`
       }
     ];
     
-    // Pour que tous les utilisateurs aient la même chanson par jour, on détermine la chanson du jour de façon déterministe
+    // Pour que tous les utilisateurs aient la même chanson par jour, on détermine la chanson du jour de manière déterministe.
     function getTodayDate() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -343,30 +355,58 @@ Il y a tout ce que vous voulez`
     let totalCorrect = 0;
     let totalIncorrect = 0;
     
-    function selectDailySong() {
-      currentSong = getDailySong();
-      disableNewSongButton();
-      correctAttempts = 0;
-      incorrectAttempts = 0;
-      revealedWords = [];
-      wordAttempts = [];
-      titleFound = false;
-      document.getElementById("songTitle").textContent = "?????";
-      document.getElementById("wordAttempts").innerHTML = "";
-      updateLyricsDisplay();
-      updateScore();
+    // Sauvegarde de l'état de jeu dans le localStorage
+    function saveGameState() {
+      const state = {
+        wordAttempts: wordAttempts,
+        correctAttempts: correctAttempts,
+        incorrectAttempts: incorrectAttempts,
+        revealedWords: revealedWords,
+        titleFound: titleFound
+      };
+      localStorage.setItem("dailyGameState", JSON.stringify(state));
+      localStorage.setItem("dailyGameDate", getTodayDate());
     }
     
-    function disableNewSongButton() {
-      const btn = document.getElementById("newSongBtn");
-      if (btn) {
-        btn.disabled = true;
-        btn.title = "La chanson du jour est fixée. Revenez demain pour une nouvelle chanson.";
+    // Chargement de l'état de jeu depuis le localStorage
+    function loadGameState() {
+      const stateStr = localStorage.getItem("dailyGameState");
+      if (stateStr && localStorage.getItem("dailyGameDate") === getTodayDate()) {
+        const state = JSON.parse(stateStr);
+        wordAttempts = state.wordAttempts || [];
+        correctAttempts = state.correctAttempts || 0;
+        incorrectAttempts = state.incorrectAttempts || 0;
+        revealedWords = state.revealedWords || [];
+        titleFound = state.titleFound || false;
       }
     }
     
+    function selectDailySong() {
+      currentSong = getDailySong();
+      disableNewSongButton();
+      loadGameState();  // Charge l'état sauvegardé si disponible
+      // Si aucun état n'est sauvegardé, initialiser
+      if (!localStorage.getItem("dailyGameState") || localStorage.getItem("dailyGameDate") !== getTodayDate()) {
+        correctAttempts = 0;
+        incorrectAttempts = 0;
+        revealedWords = [];
+        wordAttempts = [];
+        titleFound = false;
+      }
+      document.getElementById("songTitle").textContent = titleFound ? `"${currentSong.title}" - ${currentSong.artist}` : "?????";
+      updateLyricsDisplay();
+      updateScore();
+      updateWordList();
+      document.getElementById("wordInput").disabled = titleFound;
+      document.getElementById("wordInput").value = "";
+      document.getElementById("wordInput").focus();
+    }
+    
+    function disableNewSongButton() {
+      // Pas de bouton "Nouvelle chanson" dans cette version
+    }
+    
     function updateLyricsDisplay() {
-      // Si le titre est trouvé, afficher toutes les paroles, sinon les masquer
       if (titleFound) {
         document.getElementById("maskedLyrics").innerHTML = currentSong.lyrics.replace(/\n/g, "<br>");
       } else {
@@ -401,10 +441,9 @@ Il y a tout ce que vous voulez`
         totalCorrect += correctAttempts;
         totalIncorrect += incorrectAttempts;
         updateDashboard();
-        // Révéler toutes les paroles
         updateLyricsDisplay();
-        // Désactiver l'input pour empêcher d'autres essais
-        inputField.disabled = true;
+        document.getElementById("wordInput").disabled = true;
+        saveGameState();
         return;
       }
     
@@ -425,6 +464,7 @@ Il y a tout ce que vous voulez`
       updateWordList();
       inputField.value = "";
       inputField.focus();
+      saveGameState();
     }
     
     function updateScore() {
@@ -449,29 +489,17 @@ Il y a tout ce que vous voulez`
         Taux de réussite : ${successRate}%`;
     }
     
-    // Pour que la chanson reste la même pour tout le monde,
-    // on détermine la chanson du jour de manière déterministe.
-    // Le bouton "Nouvelle chanson" est désactivé.
-    function resetGame() {
-      // Si le jeu est déjà terminé (titre trouvé), on ne permet pas de réessayer
-      if (titleFound) {
-        alert("Vous avez déjà terminé la chanson du jour. Revenez demain pour une nouvelle chanson !");
-        return;
-      }
-      // Sinon, réinitialise uniquement les tentatives
-      correctAttempts = 0;
-      incorrectAttempts = 0;
-      revealedWords = [];
-      wordAttempts = [];
-      titleFound = false;
-      document.getElementById("songTitle").textContent = "?????";
-      document.getElementById("wordAttempts").innerHTML = "";
-      document.getElementById("message").textContent = "";
-      updateLyricsDisplay();
-      updateScore();
-      document.getElementById("wordInput").disabled = false;
-      document.getElementById("wordInput").value = "";
-      document.getElementById("wordInput").focus();
+    // Timer jusqu'à minuit
+    function updateTimer() {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      document.getElementById("timer").textContent =
+        `Nouvelle chanson dans : ${hours}h ${minutes}m ${seconds}s`;
     }
     
     // Planifie la mise à jour automatique à minuit
@@ -481,42 +509,10 @@ Il y a tout ce que vous voulez`
       midnight.setHours(24, 0, 0, 0);
       const msToMidnight = midnight - now;
       setTimeout(() => {
-        localStorage.removeItem("dailyGameCompleted");
-        localStorage.removeItem("dailySongDate");
+        localStorage.removeItem("dailyGameState");
+        localStorage.removeItem("dailyGameDate");
         location.reload();
       }, msToMidnight);
-    }
-    
-    // Initialisation
-    window.onload = function() {
-      // Pour une chanson du jour déterministe, on utilise getDailySong()
-      selectDailySong();
-      scheduleMidnightUpdate();
-    };
-    
-    function selectDailySong() {
-      currentSong = getDailySong();
-      disableNewSongButton();
-      correctAttempts = 0;
-      incorrectAttempts = 0;
-      revealedWords = [];
-      wordAttempts = [];
-      titleFound = false;
-      document.getElementById("songTitle").textContent = "?????";
-      document.getElementById("wordAttempts").innerHTML = "";
-      updateLyricsDisplay();
-      updateScore();
-      document.getElementById("wordInput").disabled = false;
-      document.getElementById("wordInput").value = "";
-      document.getElementById("wordInput").focus();
-    }
-    
-    function disableNewSongButton() {
-      const btn = document.getElementById("newSongBtn");
-      if (btn) {
-        btn.disabled = true;
-        btn.title = "La chanson du jour est fixée. Revenez demain pour une nouvelle chanson.";
-      }
     }
     
     function shareScore() {
@@ -545,6 +541,27 @@ Il y a tout ce que vous voulez`
         checkWord();
       }
     });
+    
+    // Initialisation
+    window.onload = function() {
+      // Si un état de jeu existe pour aujourd'hui, le charger
+      if (localStorage.getItem("dailyGameDate") === getTodayDate() && localStorage.getItem("dailyGameState")) {
+        loadGameState();
+        currentSong = getDailySong();
+        updateLyricsDisplay();
+        updateScore();
+        updateWordList();
+        updateDashboard();
+        if (titleFound) {
+          document.getElementById("wordInput").disabled = true;
+        }
+      } else {
+        selectDailySong();
+      }
+      scheduleMidnightUpdate();
+      setInterval(updateTimer, 1000);
+      updateTimer();
+    };
   </script>
 
 </body>
