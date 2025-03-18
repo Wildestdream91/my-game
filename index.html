@@ -3,24 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Devinez la Chanson - Chanson du Jour</title>
+  <title>Devinez la Chanson - Chanson du Jour (Mode Sombre)</title>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    /* Variables mode clair */
+    /* Variables mode sombre (activé par défaut) */
     :root {
-      --bg-gradient: linear-gradient(135deg, #e0eafc, #cfdef3);
-      --text-color: #333;
-      --container-bg: #ffffff;
-      --container-shadow: rgba(0,0,0,0.1);
-      --button-bg: #007bff;
-      --button-hover: #0056b3;
-      --input-border: #ccc;
-      --lyrics-bg: #fafafa;
-      --popup-bg: #ffffff;
-    }
-    /* Mode sombre */
-    body.dark-mode {
       --bg-gradient: linear-gradient(135deg, #2c3e50, #4ca1af);
       --text-color: #e0e0e0;
       --container-bg: #1e1e1e;
@@ -52,24 +40,6 @@
       margin-bottom: 20px;
       animation: fadeIn 1s ease-in-out;
     }
-    .toggle-container {
-      width: 100%;
-      text-align: right;
-      margin-bottom: 10px;
-    }
-    .toggle-container button {
-      padding: 6px 12px;
-      font-size: 14px;
-      background-color: var(--button-bg);
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .toggle-container button:hover {
-      background-color: var(--button-hover);
-    }
     .game-rules {
       max-width: 800px;
       margin: 0 auto 20px;
@@ -92,7 +62,7 @@
       font-size: 16px;
       margin-bottom: 6px;
     }
-    /* Timer placé dans les règles */
+    /* Timer dans les règles */
     #timer {
       font-size: 18px;
       font-weight: 600;
@@ -193,20 +163,6 @@
       color: #dc3545;
       font-weight: bold;
     }
-    .dashboard {
-      margin-top: 30px;
-      text-align: left;
-      font-size: 16px;
-      background: rgba(0,0,0,0.05);
-      padding: 15px;
-      border-radius: 8px;
-      transition: background 0.3s;
-    }
-    .dashboard h3 {
-      margin-bottom: 10px;
-      font-family: 'Montserrat', sans-serif;
-    }
-    /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -219,17 +175,9 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes popupAnim {
-      from { transform: scale(0.5); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
   </style>
 </head>
-<body>
-
-  <div class="toggle-container">
-    <button id="darkModeToggle" onclick="toggleDarkMode()">Mode Sombre</button>
-  </div>
+<body class="dark-mode">
 
   <h1>Devinez la chanson et ses paroles !</h1>
 
@@ -265,15 +213,10 @@
       <h3>Mots essayés :</h3>
       <ul id="wordAttempts"></ul>
     </div>
-
-    <div class="dashboard">
-      <h3>Statistiques personnelles</h3>
-      <p id="stats"></p>
-    </div>
   </div>
 
   <script>
-    // Tableau de chansons par défaut (plusieurs chansons d'artistes connus)
+    // Tableau de chansons par défaut
     const songsList = [
       {
         title: "La Vie en Rose",
@@ -329,8 +272,7 @@ Il y a tout ce que vous voulez`
       }
     ];
     
-    // Pour que tous les utilisateurs aient la même chanson par jour,
-    // on détermine la chanson du jour de manière déterministe.
+    // Pour que tous les utilisateurs aient la même chanson par jour, on la détermine de façon déterministe.
     function getTodayDate() {
       return new Date().toISOString().slice(0, 10);
     }
@@ -348,12 +290,6 @@ Il y a tout ce que vous voulez`
     let revealedWords;
     let titleFound = false;
     let wordAttempts = [];
-    
-    // Statistiques personnelles
-    let gamesPlayed = 0;
-    let totalAttempts = 0;
-    let totalCorrect = 0;
-    let totalIncorrect = 0;
     
     // Sauvegarde de l'état du jeu dans le localStorage
     function saveGameState() {
@@ -383,7 +319,6 @@ Il y a tout ce que vous voulez`
     
     function selectDailySong() {
       currentSong = getDailySong();
-      disableNewSongButton();
       loadGameState();
       if (!localStorage.getItem("dailyGameState") || localStorage.getItem("dailyGameDate") !== getTodayDate()) {
         correctAttempts = 0;
@@ -399,10 +334,6 @@ Il y a tout ce que vous voulez`
       document.getElementById("wordInput").disabled = titleFound;
       document.getElementById("wordInput").value = "";
       document.getElementById("wordInput").focus();
-    }
-    
-    function disableNewSongButton() {
-      // Aucun bouton "Nouvelle chanson" dans cette version
     }
     
     function updateLyricsDisplay() {
@@ -431,23 +362,17 @@ Il y a tout ce que vous voulez`
         return;
       }
     
-      // Vérifier si l'utilisateur a entré le titre (en normalisant)
+      // Vérifier si l'utilisateur a entré le titre (normalisé)
       if (normInput === normalizeText(currentSong.title) && !titleFound) {
         titleFound = true;
         document.getElementById("songTitle").textContent = `"${currentSong.title}" - ${currentSong.artist}`;
         messageElement.textContent = "🎉 Bravo, vous avez trouvé le titre !";
-        gamesPlayed++;
-        totalAttempts += wordAttempts.length;
-        totalCorrect += correctAttempts;
-        totalIncorrect += incorrectAttempts;
-        updateDashboard();
         updateLyricsDisplay();
         document.getElementById("wordInput").disabled = true;
         saveGameState();
         return;
       }
     
-      // Vérifier si le mot est dans les paroles (en normalisant)
       const normalizedLyricsWords = currentSong.lyrics.toLowerCase().split(/\s+/).map(normalizeText);
       const isCorrect = normalizedLyricsWords.includes(normInput);
       wordAttempts.push({ word: inputWord, correct: isCorrect, attempt: wordAttempts.length + 1 });
@@ -481,17 +406,7 @@ Il y a tout ce que vous voulez`
       document.getElementById("wordAttempts").innerHTML = wordListHtml;
     }
     
-    function updateDashboard() {
-      totalAttempts += wordAttempts.length;
-      const successRate = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
-      document.getElementById("stats").innerHTML = `Chansons jouées : ${gamesPlayed}<br>
-        Total de mots essayés : ${totalAttempts}<br>
-        Réussites : ${totalCorrect}<br>
-        Ratés : ${totalIncorrect}<br>
-        Taux de réussite : ${successRate}%`;
-    }
-    
-    // Fonction de normalisation pour ignorer apostrophes et espaces multiples
+    // Fonction de normalisation pour ignorer les apostrophes et espaces multiples
     function normalizeText(text) {
       return text.toLowerCase().replace(/['’]/g, "").replace(/\s+/g, " ").trim();
     }
